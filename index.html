@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Halswell United Draw & Score Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f3f4f6;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 1.5rem;
+      background-color: #ffffff;
+      border-radius: 1.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+    .card {
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .score-input, .opponent-input {
+      width: 3rem;
+      text-align: center;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+      background-color: #ffffff;
+      transition: all 0.2s ease-in-out;
+    }
+    .opponent-input {
+      width: 15rem;
+      text-align: left;
+      padding-left: 0.75rem;
+    }
+    .score-input:focus, .opponent-input:focus {
+      outline: none;
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Login Page -->
+  <div id="login-container" class="min-h-screen flex items-center justify-center p-4">
+    <div class="container text-center">
+      <h1 class="text-3xl font-bold mb-4 text-gray-800">Login</h1>
+      <p class="text-gray-600 mb-6">Please enter the password to view the score tracker.</p>
+      <input type="password" id="password-input" class="w-full max-w-xs px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4" placeholder="Password" />
+      <button id="login-button" class="w-full max-w-xs bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors">
+        Log In
+      </button>
+      <div id="login-message" class="mt-4 text-red-500 font-medium"></div>
+    </div>
+  </div>
+
+  <!-- Main App (Hidden by default) -->
+  <div id="main-app" class="min-h-screen items-center justify-center p-4 hidden">
+    <div class="container">
+      <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Halswell United 15th Academy Draw</h1>
+      <div id="games-container" class="space-y-6">
+        <!-- Game cards will be dynamically inserted here -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const passwordInput = document.getElementById('password-input');
+    const loginButton = document.getElementById('login-button');
+    const loginMessage = document.getElementById('login-message');
+    const loginContainer = document.getElementById('login-container');
+    const mainApp = document.getElementById('main-app');
+    
+    // IMPORTANT: This password is hardcoded and visible in the source code.
+    // This is not a secure way to protect sensitive data.
+    const CORRECT_PASSWORD = 'hufc';
+
+    loginButton.addEventListener('click', () => {
+      if (passwordInput.value === CORRECT_PASSWORD) {
+        loginContainer.classList.add('hidden');
+        mainApp.classList.remove('hidden');
+        renderGames();
+      } else {
+        loginMessage.textContent = 'Incorrect password. Please try again.';
+      }
+    });
+
+    const initialGamesData = [
+      { id: 'game-1', opponent: 'Selwyn UFC 15 Black', date: '22.09.2025', time: '09:00', field: 'TBA' },
+      { id: 'game-2', opponent: 'Burwood 15 Firebirds', date: '22.09.2025', time: '11:30', field: 'TBA' },
+      { id: 'game-3', opponent: 'Mid Canterbury Utd 15 Blue', date: '22.09.2025', time: '14:00', field: 'TBA' },
+      { id: 'game-4', opponent: 'Coastal Spirit 15th Grade Black', date: '23.09.2025', time: '09:00', field: 'TBA' },
+      { id: 'game-5', opponent: 'BYE', date: '23.09.2025', time: '11:30', field: 'TBA' },
+      { id: 'game-6', opponent: 'Selwyn UFC 15 Black', date: '23.09.2025', time: '14:00', field: 'TBA' },
+      { id: 'game-7', opponent: 'Nomads United 15 Red', date: '24.09.2025', time: '09:00', field: 'TBA' },
+      { id: 'game-8', opponent: '', date: '24.09.2025', time: '12:00', type: 'Final', description: '3rd Place Playoff' },
+      { id: 'game-9', opponent: '', date: '24.09.2025', time: '12:00', type: 'Final', description: '5th Place Playoff' },
+      { id: 'game-10', opponent: '', date: '24.09.2025', time: '13:00', type: 'Final', description: 'Cup Final' }
+    ];
+    
+    // Function to render the game cards
+    const renderGames = () => {
+      const gamesContainer = document.getElementById('games-container');
+      gamesContainer.innerHTML = '';
+      
+      const games = loadGames();
+      
+      games.forEach(game => {
+        let opponentDisplay = '';
+        let scoreInputs = '';
+        
+        if (game.opponent === 'BYE') {
+          opponentDisplay = `<span class="text-green-600 font-bold">${game.opponent}</span>`;
+          scoreInputs = `<div class="text-lg font-bold text-gray-700">BYE</div>`;
+        } else if (game.type === 'Final') {
+          opponentDisplay = `
+            <div class="flex flex-col">
+              <label for="opponent-${game.id}" class="text-xs text-gray-500 mb-1">Opponent</label>
+              <input
+                id="opponent-${game.id}"
+                type="text"
+                placeholder="Enter Opponent"
+                class="opponent-input"
+                value="${game.opponent || ''}"
+                oninput="handleInputChange('${game.id}', 'opponent', this.value)"
+              />
+            </div>
+          `;
+        } else {
+          opponentDisplay = `<span class="text-green-600">${game.opponent}</span>`;
+        }
+        
+        if (game.opponent !== 'BYE') {
+          scoreInputs = `
+            <div class="flex items-center space-x-4">
+              <div class="flex flex-col items-center">
+                <label for="ht-score-${game.id}" class="text-xs text-gray-500">Halftime</label>
+                <input
+                  id="ht-score-${game.id}"
+                  type="number"
+                  placeholder="0"
+                  class="score-input mt-1"
+                  value="${game.halftimeScore || ''}"
+                  oninput="handleInputChange('${game.id}', 'halftimeScore', this.value)"
+                />
+              </div>
+              <div class="text-xl font-bold text-gray-700">-</div>
+              <div class="flex flex-col items-center">
+                <label for="ft-score-${game.id}" class="text-xs text-gray-500">Fulltime</label>
+                <input
+                  id="ft-score-${game.id}"
+                  type="number"
+                  placeholder="0"
+                  class="score-input mt-1"
+                  value="${game.fulltimeScore || ''}"
+                  oninput="handleInputChange('${game.id}', 'fulltimeScore', this.value)"
+                />
+              </div>
+            </div>
+          `;
+        }
+        
+        const cardHtml = `
+          <div class="card flex flex-col md:flex-row items-center justify-between">
+            <div class="mb-4 md:mb-0 md:flex-grow">
+              <p class="text-sm text-gray-500 font-medium">
+                ${game.type === 'Final' ? game.description : 'Draw Information'}
+              </p>
+              <div class="text-lg font-semibold text-gray-900">
+                <span class="text-blue-600">Halswell United 15th Academy</span> vs ${opponentDisplay}
+              </div>
+              <p class="text-gray-700 mt-1">Date: ${game.date} | Time: ${game.time} | Field: ${game.field || 'TBA'}</p>
+            </div>
+            ${scoreInputs}
+          </div>
+        `;
+        
+        gamesContainer.innerHTML += cardHtml;
+      });
+    };
+    
+    // Function to handle input changes and save to localStorage
+    const handleInputChange = (gameId, key, value) => {
+      const games = loadGames();
+      const updatedGames = games.map(game =>
+        game.id === gameId ? { ...game, [key]: value } : game
+      );
+      saveGames(updatedGames);
+      // Re-render the games to update the UI
+      renderGames();
+    };
+
+    const loadGames = () => {
+        try {
+            const storedScores = localStorage.getItem('gamescores');
+            if (storedScores) {
+                const parsedScores = JSON.parse(storedScores);
+                const mergedGames = initialGamesData.map(game => ({
+                    ...game,
+                    ...parsedScores[game.id],
+                }));
+                return mergedGames;
+            } else {
+                return initialGamesData;
+            }
+        } catch (e) {
+            console.error("Error loading scores from localStorage:", e);
+            return initialGamesData;
+        }
+    }
+
+    const saveGames = (gamesToSave) => {
+        try {
+            const scoresToSave = gamesToSave.reduce((acc, game) => {
+                const { id, halftimeScore, fulltimeScore, opponent } = game;
+                acc[id] = { halftimeScore, fulltimeScore, opponent };
+                return acc;
+            }, {});
+            localStorage.setItem('gamescores', JSON.stringify(scoresToSave));
+        } catch (e) {
+            console.error("Error saving data to localStorage:", e);
+        }
+    }
+  </script>
+</body>
+</html>
